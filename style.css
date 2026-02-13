@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mission Tonton Jaurès - Retro Runner</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- INTRO -->
+    <section id="introScreen" class="screen active">
+      <div class="panel intro-panel">
+        <h1>MISSION : EXTRACTION</h1>
+        <p class="story">
+          <strong>Soldat, tu es bloqué dans une zone où on ne peut pas te venir à la rescousse.</strong><br />
+          Va chez <strong>Tonton Jaurès</strong> : un avion viendra te récupérer au château en fin de parcours.
+        </p>
+        <p class="hint">
+          Traverse chaque monde, évite les obstacles et utilise ta compétence spéciale.
+        </p>
+        <button id="introNextBtn" class="btn primary">Continuer</button>
+      </div>
+    </section>
+
+    <!-- MENU -->
+    <section id="menuScreen" class="screen">
+      <div class="panel">
+        <h2>Choix du personnage</h2>
+        <div id="heroGrid" class="hero-grid"></div>
+
+        <div class="menu-actions">
+          <button id="newGameBtn" class="btn primary" disabled>Nouvelle partie</button>
+          <button id="continueBtn" class="btn">Continuer progression</button>
+          <button id="resetSaveBtn" class="btn danger">Réinitialiser sauvegarde</button>
+        </div>
+
+        <div class="save-info" id="saveInfo">Progression : Stage 1</div>
+
+        <div class="legend">
+          <h3>Commandes</h3>
+          <ul>
+            <li><strong>Espace</strong> : Saut</li>
+            <li><strong>X</strong> : Compétence (Épée ou Bouclier)</li>
+            <li><strong>↓ / S</strong> : Tunnel (désert, zone pyramide)</li>
+            <li><strong>↑ / W</strong> : Revenir voie haute</li>
+            <li><strong>P</strong> : Pause/Reprendre</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- JEU -->
+    <section id="gameScreen" class="screen">
+      <div class="hud">
+        <div class="hud-item">SCORE <span id="hudScore">000000</span></div>
+        <div class="hud-item">STAGE <span id="hudStage">1</span>-<span id="hudStageName">DESERT</span></div>
+        <div class="hud-item">HERO <span id="hudHero">AZRAEL</span></div>
+        <div class="hud-item">POWER <span id="hudPower">EPEE</span></div>
+        <div class="hud-item">TIME <span id="hudTime">150</span></div>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas" width="960" height="540" aria-label="Jeu rétro"></canvas>
+        <div id="overlayText" class="overlay-text"></div>
+      </div>
+
+      <div class="mobile-controls">
+        <button id="btnJump" class="btn primary">SAUT</button>
+        <button id="btnSkill" class="btn">SKILL</button>
+        <button id="btnTunnel" class="btn">TUNNEL</button>
+        <button id="btnTop" class="btn">HAUT</button>
+      </div>
+
+      <div class="in-game-actions">
+        <button id="pauseBtn" class="btn">Pause</button>
+        <button id="menuBtn" class="btn">Menu</button>
+      </div>
+    </section>
+
+    <!-- VICTOIRE FINALE -->
+    <section id="victoryScreen" class="screen">
+      <div class="panel victory-panel">
+        <h2>🎉 MISSION RÉUSSIE 🎉</h2>
+        <p>
+          Le château est sécurisé. L’avion a récupéré le soldat avec succès !
+        </p>
+        <p class="big-score">Score final : <span id="finalScore">0</span></p>
+        <p>Bravo commandant 👨‍✈️</p>
+        <div class="menu-actions">
+          <button id="playAgainBtn" class="btn primary">Rejouer depuis le début</button>
+          <button id="victoryMenuBtn" class="btn">Retour menu</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

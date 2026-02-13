@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mission Tonton Jaurès - Retro NES Runner</title>
+  <style>
+    :root{
+      --bg:#090909;
+      --panel:#111;
+      --line:#2e2e2e;
+      --txt:#f3f3f3;
+      --muted:#b7b7b7;
+      --green:#65ff82;
+      --cyan:#60deff;
+      --yellow:#ffe27a;
+      --danger:#ff6f6f;
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;
+      padding:0;
+      background:#000;
+      color:var(--txt);
+      font-family: "Courier New", monospace;
+    }
+
+    #app{
+      width:min(1200px, 100%);
+      margin:0 auto;
+      padding:12px;
+    }
+
+    .screen{display:none}
+    .screen.active{display:block}
+
+    .panel{
+      background:var(--panel);
+      border:3px solid var(--line);
+      border-radius:8px;
+      padding:14px;
+    }
+
+    h1,h2,h3{
+      margin:8px 0 14px;
+      line-height:1.4;
+    }
+
+    p,li{
+      line-height:1.6;
+      font-size:14px;
+    }
+
+    .story{color:var(--yellow)}
+    .hint{color:var(--muted)}
+
+    .hero-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(210px,1fr));
+      gap:10px;
+      margin:10px 0 14px;
+    }
+
+    .hero-card{
+      border:3px solid #313131;
+      background:#0d0d0d;
+      border-radius:6px;
+      padding:10px;
+      cursor:pointer;
+      transition:transform .12s ease, border-color .12s ease;
+    }
+    .hero-card:hover{
+      transform:translateY(-2px);
+      border-color:#616161;
+    }
+    .hero-card.selected{
+      border-color:var(--green);
+    }
+    .hero-emoji{font-size:28px;margin-bottom:8px}
+    .hero-name{font-weight:700;color:var(--cyan);margin-bottom:4px}
+    .hero-skill{font-size:13px;color:#ddd;line-height:1.4}
+
+    .actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:12px 0;
+    }
+
+    .btn{
+      border:3px solid #2f2f2f;
+      background:#1a1a1a;
+      color:#fff;
+      padding:10px 12px;
+      cursor:pointer;
+      border-radius:6px;
+      font-weight:700;
+      font-size:13px;
+    }
+    .btn:hover{filter:brightness(1.15)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .btn.primary{
+      background:#143f22;
+      border-color:#2c8f49;
+    }
+    .btn.danger{
+      background:#421313;
+      border-color:#b33939;
+    }
+
+    .save-info{
+      color:#97d5ff;
+      margin-bottom:8px;
+      font-size:13px;
+    }
+
+    .legend{
+      border-top:2px dashed #2b2b2b;
+      padding-top:8px;
+      margin-top:6px;
+    }
+
+    .hud{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(170px,1fr));
+      gap:6px;
+      margin-bottom:8px;
+    }
+    .hud-box{
+      border:2px solid #2b2b2b;
+      background:#0d0d0d;
+      padding:8px;
+      min-height:38px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:12px;
+    }
+    .hud-box span{
+      color:var(--green);
+      margin-left:8px;
+      font-weight:700;
+    }
+
+    .canvas-wrap{
+      position:relative;
+      border:4px solid #2f2f2f;
+      border-radius:8px;
+      overflow:hidden;
+      background:#000;
+    }
+
+    canvas{
+      display:block;
+      width:100%;
+      height:auto;
+      image-rendering:pixelated;
+      background:#000;
+    }
+
+    .overlay{
+      position:absolute;
+      top:16px;
+      left:50%;
+      transform:translateX(-50%);
+      background:rgba(0,0,0,.75);
+      border:2px solid #4a4a4a;
+      border-radius:6px;
+      padding:8px 10px;
+      font-weight:700;
+      font-size:13px;
+      display:none;
+      white-space:nowrap;
+    }
+
+    .mobile-controls{
+      margin-top:10px;
+      display:none;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+
+    .footer-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .victory{
+      text-align:center;
+    }
+    .victory .score{
+      color:var(--green);
+      font-size:18px;
+      margin:10px 0;
+      font-weight:700;
+    }
+
+    @media (max-width:860px){
+      .mobile-controls{display:flex}
+      p,li{font-size:13px}
+      .btn{font-size:12px}
+      .hud-box{font-size:11px}
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- INTRO -->
+    <section id="introScreen" class="screen active">
+      <div class="panel">
+        <h1>MISSION : EXTRACTION</h1>
+        <p class="story">
+          <strong>Soldat, tu es bloqué dans une zone où on ne peut pas te venir à la rescousse.</strong><br>
+          Va chez <strong>Tonton Jaurès</strong>. À la fin, l’avion viendra te récupérer au château.
+        </p>
+        <p class="hint">
+          Mondes: désert, forêt, urbain, plage, montagne.  
+          Évite les obstacles, saute au bon moment, et utilise ta compétence.
+        </p>
+        <div class="actions">
+          <button id="goMenuBtn" class="btn primary">Continuer</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- MENU -->
+    <section id="menuScreen" class="screen">
+      <div class="panel">
+        <h2>Choisis ton personnage</h2>
+        <div id="heroGrid" class="hero-grid"></div>
+
+        <div class="actions">
+          <button id="newGameBtn" class="btn primary" disabled>Nouvelle partie</button>
+          <button id="continueBtn" class="btn">Continuer</button>
+          <button id="resetBtn" class="btn danger">Réinitialiser sauvegarde</button>
+        </div>
+
+        <div id="saveInfo" class="save-info">Progression: Stage 1</div>
+
+        <div class="legend">
+          <h3>Commandes</h3>
+          <ul>
+            <li><strong>Espace</strong> : Saut</li>
+            <li><strong>X</strong> : Compétence</li>
+            <li><strong>↓ / S</strong> : Aller en tunnel (désert)</li>
+            <li><strong>↑ / W</strong> : Revenir en haut</li>
+            <li><strong>P</strong> : Pause</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section id="gameScreen" class="screen">
+      <div class="hud">
+        <div class="hud-box">SCORE <span id="hudScore">000000</span></div>
+        <div class="hud-box">STAGE <span id="hudStage">1-DESERT</span></div>
+        <div class="hud-box">HERO <span id="hudHero">AZRAEL</span></div>
+        <div class="hud-box">POWER <span id="hudPower">EPEE</span></div>
+        <div class="hud-box">TIME <span id="hudTime">150</span></div>
+      </div>
+
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas" width="960" height="540"></canvas>
+        <div id="overlay" class="overlay"></div>
+      </div>
+
+      <div class="mobile-controls">
+        <button id="mJump" class="btn primary">SAUT</button>
+        <button id="mSkill" class="btn">SKILL</button>
+        <button id="mTunnel" class="btn">TUNNEL</button>
+        <button id="mTop" class="btn">HAUT</button>
+      </div>
+
+      <div class="footer-actions">
+        <button id="pauseBtn" class="btn">Pause</button>
+        <button id="backMenuBtn" class="btn">Menu</button>
+      </div>
+    </section>
+
+    <!-- VICTORY -->
+    <section id="victoryScreen" class="screen">
+      <div class="panel victory">
+        <h2>🎉 MISSION RÉUSSIE 🎉</h2>
+        <p>Le personnage est arrivé au château. L’avion l’a récupéré avec succès !</p>
+        <div class="score">Score final: <span id="finalScore">0</span></div>
+        <div class="actions" style="justify-content:center">
+          <button id="playAgainBtn" class="btn primary">Rejouer</button>
+          <button id="victoryMenuBtn" class="btn">Retour menu</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    (function(){
+      "use strict";
+
+      // ======== DOM ========
+      var introScreen = document.getElementById("introScreen");
+      var menuScreen = document.getElementById("menuScreen");
+      var gameScreen = document.getElementById("gameScreen");
+      var victoryScreen = document.getElementById("victoryScreen");
+
+      var goMenuBtn = document.getElementById("goMenuBtn");
+      var heroGrid = document.getElementById("heroGrid");
+      var newGameBtn = document.getElementById("newGameBtn");
+      var continueBtn = document.getElementById("continueBtn");
+      var resetBtn = document.getElementById("resetBtn");
+      var saveInfo = document.getElementById("saveInfo");
+
+      var canvas = document.getElementById("gameCanvas");
+      var ctx = canvas.getContext("2d");
+
+      var hudScore = document.getElementById("hudScore");
+      var hudStage = document.getElementById("hudStage");
+      var hudHero = document.getElementById("hudHero");
+      var hudPower = document.getElementById("hudPower");
+      var hudTime = document.getElementById("hudTime");
+
+      var overlay = document.getElementById("overlay");
+
+      var mJump = document.getElementById("mJump");
+      var mSkill = document.getElementById("mSkill");
+      var mTunnel = document.getElementById("mTunnel");
+      var mTop = document.getElementById("mTop");
+
+      var pauseBtn = document.getElementById("pauseBtn");
+      var backMenuBtn = document.getElementById("backMenuBtn");
+
+      var finalScore = document.getElementById("finalScore");
+      var playAgainBtn = document.getElementById("playAgainBtn");
+      var victoryMenuBtn = document.getElementById("victoryMenuBtn");
+
+      // ======== DATA ========
+      var SAVE_KEY = "mtj_save_v3";
+      var BEST_KEY = "mtj_best_v3";
+
+      var W = canvas.width;
+      var H = canvas.height;
+
+      var PLAYER_SCREEN_X = 180;
+      var GROUND_Y = 460;
+      var TUNNEL_FLOOR_Y = 520;
+      var TUNNEL_CEIL_Y = 472;
+
+      var PLAYER_W = 44;
+      var PLAYER_H = 52;
+      var GRAVITY = 1700;
+      var JUMP_V = -690;
+
+      var HEROES = [
+        { id:"AZRAEL", emoji:"🦸‍♂️", powerType:"sword", powerName:"EPEE", desc:"Epee + saut" },
+        { id:"AMARIS", emoji:"🦸‍♀️", powerType:"shield", powerName:"BOUCLIER", desc:"Bouclier + saut" },
+        { id:"GARCIA", emoji:"🦹‍♂️", powerType:"sword", powerName:"EPEE", desc:"Epee + saut" },
+        { id:"MAYA", emoji:"🦹‍♀️", powerType:"shield", powerName:"BOUCLIER", desc:"Bouclier + saut" }
+      ];
+
+      var STAGES = [
+        { id:1, name:"DESERT", theme:"desert",   length:7600, speed:185, time:150, split:{start:2150,end:3600}, obstacles:["🌵","🪨","📦"] },
+        { id:2, name:"FORET",  theme:"forest",   length:7000, speed:195, time:145, split:null, obstacles:["🌳","🪵","🦔"] },
+        { id:3, name:"URBAIN", theme:"urban",    length:7000, speed:205, time:140, split:null, obstacles:["🚧","🛴","🗑️"] },
+        { id:4, name:"PLAGE",  theme:"beach",    length:7100, speed:210, time:140, split:null, obstacles:["🪵","🦀","🪨"] },
+        { id:5, name:"MONTAGNE",theme:"mountain",length:7400, speed:220, time:135, split:null, obstacles:["🪨","🌲","🧊"] }
+      ];
+
+      var state = {
+        selectedHero:null,
+        currentStage:1,
+        unlockedStage:1,
+        totalScore:0,
+        bestScore:0,
+
+        stage:null,
+        objects:[],
+        cameraX:0,
+        player:null,
+        stageScore:0,
+        timeLeft:0,
+
+        phase:"idle", // idle, playing, paused, failed, ending
+        phaseTimer:0,
+        overlayTimer:0,
+
+        planeX:W+200,
+        lastTs:0,
+        rafId:0
+      };
+
+      // ======== UTILS ========
+      function showScreen(name){
+        introScreen.classList.remove("active");
+        menuScreen.classList.remove("active");
+        gameScreen.classList.remove("active");
+        victoryScreen.classList.remove("active");
+
+        if(name==="intro") introScreen.classList.add("active");
+        if(name==="menu") menuScreen.classList.add("active");
+        if(name==="game") gameScreen.classList.add("active");
+        if(name==="victory") victoryScreen.classList.add("active");
+      }
+
+      function clamp(v,min,max){ return Math.max(min, Math.min(max,v)); }
+      function ri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+      function rectsHit(a,b){
+        return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+      }
+
+      function formatScore(n){
+        n = Math.max(0, Math.floor(n));
+        var s = String(n);
+        while(s.length<6) s = "0"+s;
+        return s;
+      }
+
+      function getHeroById(id){
+        for(var i=0;i<HEROES.length;i++){
+          if(HEROES[i].id===id) return HEROES[i];
+        }
+        return HEROES[0];
+      }
+
+      function getStageById(id){
+        for(var i=0;i<STAGES.length;i++){
+          if(STAGES[i].id===id) return STAGES[i];
+        }
+        return STAGES[0];
+      }
+
+      function inSplit(stage, x){
+        return !!stage.split && x>=stage.split.start && x<=stage.split.end;
+      }
+
+      function floorY(route){
+        var floor = route==="tunnel" ? TUNNEL_FLOOR_Y : GROUND_Y;
+        return floor - PLAYER_H;
+      }
+
+      function obstacleY(obj){
+        var floor = obj.route==="tunnel" ? TUNNEL_FLOOR_Y : GROUND_Y;
+        return floor - obj.h;
+      }
+
+      function setOverlay(text, sec){
+        if(typeof sec!=="number") sec = 1.4;
+        overlay.textContent = text;
+        overlay.style.display = "block";
+        state.overlayTimer = sec;
+      }
+
+      function hideOverlay(){
+        overlay.style.display = "none";
+        state.overlayTimer = 0;
+      }
+
+      // ======== SAVE ========
+      function loadSave(){
+        try{
+          var raw = localStorage.getItem(SAVE_KEY);
+          if(raw){
+            var d = JSON.parse(raw);
+            state.currentStage = clamp(d.currentStage || 1, 1, STAGES.length);
+            state.unlockedStage = clamp(d.unlockedStage || 1, 1, STAGES.length);
+            state.totalScore = Math.max(0, d.totalScore || 0);
+            state.selectedHero = getHeroById(d.heroId || "AZRAEL");
+          }else{
+            state.selectedHero = HEROES[0];
+          }
+        }catch(e){
+          state.selectedHero = HEROES[0];
+        }
+
+        try{
+          state.bestScore = Math.max(0, parseInt(localStorage.getItem(BEST_KEY)||"0",10));
+        }catch(e2){
+          state.bestScore = 0;
+        }
+      }
+
+      function saveProgress(){
+        var payload = {
+          currentStage: state.currentStage,
+          unlockedStage: state.unlockedStage,
+          heroId: state.selectedHero ? state.selectedHero.id : "AZRAEL",
+          totalScore: Math.max(0, Math.floor(state.totalScore))
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+      }
+
+      function saveBest(){
+        if(state.totalScore > state.bestScore){
+          state.bestScore = Math.floor(state.totalScore);
+          localStorage.setItem(BEST_KEY, String(state.bestScore));
+        }
+      }
+
+      function refreshSaveInfo(){
+        saveInfo.textContent = "Progression: Stage " + state.currentStage +
+          " (debloque jusqu'au stage " + state.unlockedStage + ") | Best: " + state.bestScore;
+      }
+
+      // ======== UI HEROES ========
+      function renderHeroCards(){
+        heroGrid.innerHTML = "";
+        for(var i=0;i<HEROES.length;i++){
+          (function(hero){
+            var card = document.createElement("div");
+            card.className = "hero-card" + (state.selectedHero && state.selectedHero.id===hero.id ? " selected":"");
+            card.innerHTML =
+              '<div class="hero-emoji">'+hero.emoji+'</div>' +
+              '<div class="hero-name">'+hero.id+'</div>' +
+              '<div class="hero-skill">'+hero.desc+'</div>';
+
+            card.addEventListener("click", function(){
+              state.selectedHero = hero;
+              var cards = heroGrid.querySelectorAll(".hero-card");
+              for(var c=0;c<cards.length;c++) cards[c].classList.remove("selected");
+              card.classList.add("selected");
+              newGameBtn.disabled = false;
+              saveProgress();
+            });
+
+            heroGrid.appendChild(card);
+          })(HEROES[i]);
+        }
+
+        newGameBtn.disabled = !state.selectedHero;
+      }
+
+      // ======== GAME SETUP ========
+      function makePlayer(){
+        return {
+          worldX:100,
+          y:floorY("top"),
+          vy:0,
+          onGround:true,
+          route:"top",
+
+          actionTimer:0,      // sword slash visual
+          shieldTimer:0,      // shield duration
+          shieldCooldown:0    // cooldown
+        };
+      }
+
+      function generateObjects(stage){
+        var arr = [];
+        var x = 620;
+
+        while(x < stage.length - 380){
+          x += ri(250, 390);
+
+          if(stage.split && x > stage.split.start+120 && x < stage.split.end-120){
+            var emo = stage.obstacles[ri(0, stage.obstacles.length-1)];
+            var h = ri(36, 56);
+
+            arr.push({type:"obstacle", x:x, route:"top", w:42, h:h, emoji:emo, active:true});
+            arr.push({type:"obstacle", x:x, route:"tunnel", w:42, h:h, emoji:emo, active:true});
+          }else{
+            var emo2 = stage.obstacles[ri(0, stage.obstacles.length-1)];
+            var h2 = ri(34, 62);
+            var w2 = ri(36, 58);
+            arr.push({type:"obstacle", x:x, route:"top", w:w2, h:h2, emoji:emo2, active:true});
+          }
+        }
+        return arr;
+      }
+
+      function startStage(stageId){
+        state.stage = getStageById(stageId);
+        state.currentStage = stageId;
+        state.objects = generateObjects(state.stage);
+        state.player = makePlayer();
+
+        state.cameraX = 0;
+        state.stageScore = 0;
+        state.timeLeft = state.stage.time;
+        state.phase = "playing";
+        state.phaseTimer = 0;
+        state.planeX = W + 220;
+        state.lastTs = 0;
+
+        saveProgress();
+        updateHUD();
+        setOverlay("STAGE "+state.stage.id+" - "+state.stage.name, 1.7);
+      }
+
+      function newGame(){
+        if(!state.selectedHero) return;
+        state.currentStage = 1;
+        state.unlockedStage = 1;
+        state.totalScore = 0;
+        saveProgress();
+        showScreen("game");
+        startStage(1);
+      }
+
+      function continueGame(){
+        if(!state.selectedHero) state.selectedHero = HEROES[0];
+        showScreen("game");
+        startStage(state.currentStage);
+      }
+
+      function failStage(msg){
+        state.phase = "failed";
+        state.phaseTimer = 1.3;
+        setOverlay("💥 "+msg+" | Reprise Stage "+state.currentStage, 1.3);
+        saveProgress();
+      }
+
+      function beginEnding(){
+        state.phase = "ending";
+        state.phaseTimer = 0;
+        state.planeX = W + 220;
+        setOverlay("🏰 Chateau atteint... extraction ✈️", 1.8);
+      }
+
+      function completeStage(){
+        var bonus = Math.max(0, Math.floor(state.timeLeft * 10));
+        state.totalScore += Math.floor(state.stageScore) + bonus;
+        saveBest();
+
+        if(state.currentStage < STAGES.length){
+          state.currentStage += 1;
+          state.unlockedStage = Math.max(state.unlockedStage, state.currentStage);
+          saveProgress();
+          refreshSaveInfo();
+          startStage(state.currentStage);
+        }else{
+          state.unlockedStage = STAGES.length;
+          saveProgress();
+          refreshSaveInfo();
+          finalScore.textContent = String(Math.floor(state.totalScore));
+          showScreen("victory");
+          state.phase = "idle";
+        }
+      }
+
+      // ======== INPUT ========
+      function jump(){
+        if(state.phase!=="playing") return;
+        var p = state.player;
+        if(!p) return;
+        if(p.onGround){
+          p.vy = JUMP_V;
+          p.onGround = false;
+        }
+      }
+
+      function skill(){
+        if(state.phase!=="playing") return;
+        var p = state.player;
+        var hero = state.selectedHero;
+        if(!p || !hero) return;
+
+        if(hero.powerType === "sword"){
+          p.actionTimer = 0.22;
+          var hits = 0;
+
+          for(var i=0;i<state.objects.length;i++){
+            var o = state.objects[i];
+            if(!o.active || o.type!=="obstacle") continue;
+            if(o.route !== p.route) continue;
+
+            var dx = o.x - p.worldX;
+            if(dx >= -10 && dx <= 120){
+              o.active = false;
+              hits++;
+            }
+          }
+
+          if(hits>0){
+            state.stageScore += hits*35;
+            setOverlay("⚔️ "+hits+" obstacle(s) detruit(s)", 0.7);
+          }else{
+            setOverlay("⚔️ Coup d'epee", 0.5);
+          }
+        }else{
+          // shield
+          if(p.shieldCooldown <= 0){
+            p.shieldTimer = 1.7;
+            p.shieldCooldown = 4.2;
+            setOverlay("🛡️ Bouclier active", 0.8);
+          }else{
+            setOverlay("🛡️ Recharge...", 0.5);
+          }
+        }
+      }
+
+      function toTunnel(){
+        if(state.phase!=="playing") return;
+        var p = state.player;
+        var st = state.stage;
+        if(!p || !st) return;
+        if(!inSplit(st, p.worldX)) return;
+        if(!p.onGround) return;
+
+        p.route = "tunnel";
+        p.y = floorY("tunnel");
+      }
+
+      function toTop(){
+        if(state.phase!=="playing") return;
+        var p = state.player;
+        var st = state.stage;
+        if(!p || !st) return;
+        if(!inSplit(st, p.worldX)) return;
+        if(!p.onGround) return;
+
+        p.route = "top";
+        p.y = floorY("top");
+      }
+
+      function togglePause(){
+        if(state.phase==="playing"){
+          state.phase = "paused";
+          setOverlay("PAUSE", 999);
+          pauseBtn.textContent = "Reprendre";
+        }else if(state.phase==="paused"){
+          state.phase = "playing";
+          hideOverlay();
+          pauseBtn.textContent = "Pause";
+        }
+      }
+
+      // ======== UPDATE ========
+      function update(dt){
+        if(!state.stage || !state.player) return;
+
+        if(state.overlayTimer > 0){
+          state.overlayTimer -= dt;
+          if(state.overlayTimer <= 0) hideOverlay();
+        }
+
+        if(state.phase==="idle" || state.phase==="paused") return;
+
+        if(state.phase==="failed"){
+          state.phaseTimer -= dt;
+          if(state.phaseTimer <= 0){
+            startStage(state.currentStage); // restart same stage
+          }
+          return;
+        }
+
+        if(state.phase==="ending"){
+          updateEnding(dt);
+          return;
+        }
+
+        // playing
+        var p = state.player;
+        var st = state.stage;
+
+        state.timeLeft -= dt;
+        if(state.timeLeft <= 0){
+          state.timeLeft = 0;
+          failStage("Temps ecoule");
+          return;
+        }
+
+        if(p.actionTimer > 0) p.actionTimer -= dt;
+        if(p.shieldTimer > 0) p.shieldTimer -= dt;
+        if(p.shieldCooldown > 0) p.shieldCooldown -= dt;
+
+        // forward speed
+        var speed = st.speed + Math.min(80, (st.time - state.timeLeft) * 0.7);
+        p.worldX += speed * dt;
+
+        // split logic: if out split, force top
+        if(!inSplit(st, p.worldX) && p.route !== "top"){
+          p.route = "top";
+          p.y = floorY("top");
+          p.vy = 0;
+          p.onGround = true;
+        }
+
+        // jump physics
+        p.vy += GRAVITY * dt;
+        p.y += p.vy * dt;
+
+        var by = floorY(p.route);
+        if(p.y >= by){
+          p.y = by;
+          p.vy = 0;
+          p.onGround = true;
+        }else{
+          p.onGround = false;
+        }
+
+        // camera
+        state.cameraX = clamp(p.worldX - PLAYER_SCREEN_X, 0, st.length - W);
+
+        // collisions
+        collisions();
+
+        // stage score over time
+        state.stageScore += dt * 14;
+
+        // reach end
+        if(p.worldX >= st.length - 180){
+          beginEnding();
+        }
+
+        updateHUD();
+      }
+
+      function collisions(){
+        var p = state.player;
+        var hero = state.selectedHero;
+        if(!p || !hero) return;
+
+        var pr = {
+          x:PLAYER_SCREEN_X,
+          y:p.y,
+          w:PLAYER_W,
+          h:PLAYER_H
+        };
+
+        for(var i=0;i<state.objects.length;i++){
+          var o = state.objects[i];
+          if(!o.active || o.type!=="obstacle") continue;
+
+          var sx = o.x - state.cameraX;
+          if(sx < -120 || sx > W+120) continue;
+
+          var sy = obstacleY(o);
+          var or = {x:sx, y:sy, w:o.w, h:o.h};
+
+          if(!rectsHit(pr, or)) continue;
+
+          // shield absorbs (for AMARIS / MAYA)
+          if(hero.powerType==="shield" && p.shieldTimer > 0){
+            o.active = false;
+            p.shieldTimer = Math.max(0, p.shieldTimer - 0.65);
+            state.stageScore += 20;
+            setOverlay("🛡️ Obstacle bloque", 0.55);
+            continue;
+          }
+
+          failStage("Obstacle touche");
+          return;
+        }
+      }
+
+      function updateEnding(dt){
+        var p = state.player;
+        var st = state.stage;
+
+        state.phaseTimer += dt;
+
+        var gateX = st.length - 150;
+        if(p.worldX < gateX){
+          p.worldX += 130 * dt;
+        }
+
+        state.cameraX = clamp(p.worldX - PLAYER_SCREEN_X, 0, st.length - W);
+
+        if(state.phaseTimer > 0.7){
+          state.planeX -= 250 * dt;
+        }
+
+        if(state.phaseTimer > 4.2){
+          completeStage();
+        }
+
+        updateHUD();
+      }
+
+      // ======== DRAW ========
+      function draw(){
+        if(!state.stage || !state.player){
+          ctx.fillStyle = "#000";
+          ctx.fillRect(0,0,W,H);
+          return;
+        }
+
+        drawBackground(state.stage.theme);
+        drawGround(state.stage.theme);
+        drawSplitDesertIfAny();
+        drawCastle();
+        drawObstacles();
+        drawPlayer();
+        if(state.phase==="ending") drawPlane();
+        drawTopLine();
+      }
+
+      function drawBackground(theme){
+        // sky
+        if(theme==="desert") ctx.fillStyle = "#6f7dff";
+        else if(theme==="forest") ctx.fillStyle = "#7db2ff";
+        else if(theme==="urban") ctx.fillStyle = "#7593d9";
+        else if(theme==="beach") ctx.fillStyle = "#7bd4ff";
+        else ctx.fillStyle = "#9bb4d9";
+        ctx.fillRect(0,0,W,H);
+
+        // clouds
+        cloud(120 - (state.cameraX*0.25 % (W+220)), 85, 1.1);
+        cloud(560 - (state.cameraX*0.20 % (W+260)), 62, 0.95);
+        cloud(900 - (state.cameraX*0.15 % (W+300)), 105, 1.2);
+
+        // theme layer
+        if(theme==="desert") layerDesert();
+        else if(theme==="forest") layerForest();
+        else if(theme==="urban") layerUrban();
+        else if(theme==="beach") layerBeach();
+        else layerMountain();
+      }
+
+      function cloud(x,y,s){
+        var w = 92*s, h = 28*s;
+        ctx.fillStyle = "#f1f1f1";
+        ctx.fillRect(x,y,w,h);
+        ctx.beginPath();
+        ctx.arc(x+18*s, y, 12*s, Math.PI, 0);
+        ctx.arc(x+40*s, y-6*s, 14*s, Math.PI, 0);
+        ctx.arc(x+64*s, y, 11*s, Math.PI, 0);
+        ctx.fill();
+      }
+
+      function layerDesert(){
+        var off = -(state.cameraX*0.22)%260;
+        for(var x=-260+off;x<W+260;x+=260){
+          ctx.fillStyle="#d9b15a";
+          ctx.beginPath();
+          ctx.moveTo(x,390);
+          ctx.quadraticCurveTo(x+130,330,x+260,390);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      function layerForest(){
+        var off = -(state.cameraX*0.35)%120;
+        for(var x=-120+off;x<W+120;x+=120){
+          ctx.fillStyle="#2d7f3f";
+          ctx.fillRect(x+46,320,12,70);
+          ctx.fillStyle="#2fb054";
+          ctx.beginPath();
+          ctx.moveTo(x+10,330); ctx.lineTo(x+52,260); ctx.lineTo(x+94,330);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+
+      function layerUrban(){
+        var off = -(state.cameraX*0.35)%180;
+        for(var x=-180+off;x<W+180;x+=180){
+          var h = 120 + Math.abs(Math.sin((x+state.cameraX)*0.01))*80;
+          ctx.fillStyle="#3d4c6e";
+          ctx.fillRect(x,380-h,120,h);
+          ctx.fillStyle="#9fc3ff";
+          for(var r=0;r<6;r++){
+            for(var c=0;c<3;c++){
+              ctx.fillRect(x+12+c*32, 390-h+12+r*18, 12,8);
+            }
+          }
+        }
+      }
+
+      function layerBeach(){
+        ctx.fillStyle="#3ea8ff";
+        ctx.fillRect(0,390,W,90);
+
+        ctx.fillStyle="rgba(255,255,255,.45)";
+        var off = -(state.cameraX*0.55)%48;
+        for(var x=-48+off;x<W+48;x+=48){
+          ctx.fillRect(x,402,26,4);
+          ctx.fillRect(x+10,430,18,4);
+        }
+
+        var po = -(state.cameraX*0.3)%260;
+        for(var px=-260+po;px<W+260;px+=260){
+          ctx.fillStyle="#8b5a2b";
+          ctx.fillRect(px+70,325,10,70);
+          ctx.fillStyle="#1fab52";
+          ctx.beginPath();
+          ctx.moveTo(px+75,320); ctx.lineTo(px+38,300); ctx.lineTo(px+62,332);
+          ctx.closePath(); ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(px+75,320); ctx.lineTo(px+112,300); ctx.lineTo(px+88,332);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+
+      function layerMountain(){
+        var off = -(state.cameraX*0.28)%220;
+        for(var x=-220+off;x<W+220;x+=220){
+          ctx.fillStyle="#607089";
+          ctx.beginPath();
+          ctx.moveTo(x,390); ctx.lineTo(x+100,240); ctx.lineTo(x+200,390);
+          ctx.closePath(); ctx.fill();
+
+          ctx.fillStyle="#e6edf7";
+          ctx.beginPath();
+          ctx.moveTo(x+78,274); ctx.lineTo(x+100,240); ctx.lineTo(x+122,274);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+
+      function drawGround(theme){
+        var top="#7a4b2f", tile="#a86b43";
+        if(theme==="forest"){top="#6a4a2c";tile="#9a6a3a";}
+        if(theme==="urban"){top="#4f5566";tile="#68708a";}
+        if(theme==="beach"){top="#c8a86e";tile="#debf85";}
+        if(theme==="mountain"){top="#5b6473";tile="#7f8b9a";}
+
+        ctx.fillStyle=top;
+        ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
+
+        var tw=32;
+        var shift = ((-state.cameraX % tw) + tw) % tw;
+        ctx.fillStyle=tile;
+        for(var x=-tw+shift;x<W+tw;x+=tw){
+          for(var y=GROUND_Y;y<H;y+=22){
+            ctx.fillRect(x,y,tw-2,20);
+          }
+        }
+
+        // tunnel band in desert split
+        if(state.stage.theme==="desert" && state.stage.split){
+          var s = state.stage.split.start - state.cameraX;
+          var e = state.stage.split.end - state.cameraX;
+          if(e>0 && s<W){
+            ctx.fillStyle="#222";
+            ctx.fillRect(Math.max(0,s), TUNNEL_CEIL_Y, Math.min(W,e)-Math.max(0,s), H-TUNNEL_CEIL_Y);
+            ctx.strokeStyle="#585858";
+            ctx.lineWidth=3;
+            ctx.beginPath();
+            ctx.moveTo(Math.max(0,s), TUNNEL_CEIL_Y);
+            ctx.lineTo(Math.min(W,e), TUNNEL_CEIL_Y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      function drawSplitDesertIfAny(){
+        var st = state.stage;
+        if(st.theme!=="desert" || !st.split) return;
+
+        var s = st.split.start - state.cameraX;
+        var e = st.split.end - state.cameraX;
+
+        pyramid(s+140, GROUND_Y, 120, 120);
+        pyramid(e-200, GROUND_Y, 160, 140);
+      }
+
+      function pyramid(x, yBase, w, h){
+        ctx.fillStyle="#d6a84b";
+        ctx.beginPath();
+        ctx.moveTo(x,yBase);
+        ctx.lineTo(x+w/2, yBase-h);
+        ctx.lineTo(x+w, yBase);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle="rgba(0,0,0,.2)";
+        for(var i=0;i<6;i++){
+          var yy = yBase - (i+1)*(h/7);
+          ctx.beginPath();
+          ctx.moveTo(x + (i*(w/14)), yy);
+          ctx.lineTo(x + w - (i*(w/14)), yy);
+          ctx.stroke();
+        }
+      }
+
+      function drawCastle(){
+        var st = state.stage;
+        var cx = st.length - 120 - state.cameraX;
+        if(cx < -220 || cx > W+220) return;
+
+        ctx.fillStyle="#7b7b8a";
+        ctx.fillRect(cx, GROUND_Y-126, 120, 126);
+        ctx.fillRect(cx-22, GROUND_Y-150, 26, 150);
+        ctx.fillRect(cx+116, GROUND_Y-150, 26, 150);
+
+        ctx.fillStyle="#3b2d2d";
+        ctx.fillRect(cx+50, GROUND_Y-44, 20, 44);
+
+        ctx.fillStyle="#ddd";
+        ctx.fillRect(cx+58, GROUND_Y-180, 3, 30);
+        ctx.fillStyle="#ff3b3b";
+        ctx.fillRect(cx+61, GROUND_Y-178, 20, 10);
+      }
+
+      function drawPlane(){
+        var y = 150 + Math.sin(state.phaseTimer*4.5)*6;
+        ctx.font="34px sans-serif";
+        ctx.fillStyle="#fff";
+        ctx.fillText("✈️", state.planeX, y);
+      }
+
+      function drawObstacles(){
+        for(var i=0;i<state.objects.length;i++){
+          var o = state.objects[i];
+          if(!o.active || o.type!=="obstacle") continue;
+
+          var x = o.x - state.cameraX;
+          if(x < -120 || x > W+120) continue;
+
+          var y = obstacleY(o);
+
+          ctx.fillStyle="#1f1f1f";
+          ctx.fillRect(x,y,o.w,o.h);
+          ctx.strokeStyle="#5d5d5d";
+          ctx.strokeRect(x+1,y+1,o.w-2,o.h-2);
+
+          ctx.font="24px sans-serif";
+          ctx.fillStyle="#fff";
+          ctx.fillText(o.emoji, x+6, y+o.h-8);
+        }
+      }
+
+      function drawPlayer(){
+        var p = state.player;
+        var hero = state.selectedHero || HEROES[0];
+
+        ctx.fillStyle="rgba(0,0,0,.35)";
+        ctx.fillRect(PLAYER_SCREEN_X-6, p.y-6, PLAYER_W+12, PLAYER_H+12);
+
+        if(p.shieldTimer > 0){
+          ctx.strokeStyle="#53e3ff";
+          ctx.lineWidth=4;
+          ctx.beginPath();
+          ctx.ellipse(PLAYER_SCREEN_X+PLAYER_W/2, p.y+PLAYER_H/2, 34,36,0,0,Math.PI*2);
+          ctx.stroke();
+        }
+
+        ctx.font="36px sans-serif";
+        ctx.fillStyle="#fff";
+        ctx.fillText(hero.emoji, PLAYER_SCREEN_X+2, p.y+38);
+
+        // sword slash visual
+        if(p.actionTimer > 0 && hero.powerType==="sword"){
+          ctx.strokeStyle="#fff";
+          ctx.lineWidth=5;
+          ctx.beginPath();
+          ctx.moveTo(PLAYER_SCREEN_X+PLAYER_W+4, p.y+14);
+          ctx.lineTo(PLAYER_SCREEN_X+PLAYER_W+36, p.y+30);
+          ctx.stroke();
+
+          ctx.strokeStyle="#ffe066";
+          ctx.lineWidth=3;
+          ctx.beginPath();
+          ctx.moveTo(PLAYER_SCREEN_X+PLAYER_W+8, p.y+8);
+          ctx.lineTo(PLAYER_SCREEN_X+PLAYER_W+42, p.y+26);
+          ctx.stroke();
+        }
+      }
+
+      function drawTopLine(){
+        ctx.fillStyle="rgba(0,0,0,.35)";
+        ctx.fillRect(0,0,W,30);
+
+        ctx.fillStyle="#fff";
+        ctx.font="bold 12px monospace";
+        ctx.fillText("WORLD "+state.stage.id+" - "+state.stage.name, 12, 20);
+
+        if(state.phase==="playing" && inSplit(state.stage, state.player.worldX)){
+          ctx.fillStyle="#ffe066";
+          ctx.fillText("ROUTE: "+state.player.route.toUpperCase(), 490, 20);
+        }
+      }
+
+      // ======== HUD ========
+      function updateHUD(){
+        var hero = state.selectedHero || HEROES[0];
+        hudScore.textContent = formatScore(state.totalScore + state.stageScore);
+        hudStage.textContent = state.currentStage + "-" + (state.stage ? state.stage.name : "...");
+        hudHero.textContent = hero.id;
+        hudPower.textContent = hero.powerName;
+        hudTime.textContent = String(Math.max(0, Math.ceil(state.timeLeft)));
+      }
+
+      // ======== LOOP ========
+      function loop(ts){
+        if(!state.lastTs) state.lastTs = ts;
+        var dt = Math.min(0.033, (ts - state.lastTs) / 1000);
+        state.lastTs = ts;
+
+        if(gameScreen.classList.contains("active")){
+          update(dt);
+          draw();
+        }
+
+        state.rafId = requestAnimationFrame(loop);
+      }
+
+      // ======== EVENTS ========
+      goMenuBtn.addEventListener("click", function(){
+        showScreen("menu");
+      });
+
+      newGameBtn.addEventListener("click", function(){
+        newGame();
+      });
+
+      continueBtn.addEventListener("click", function(){
+        continueGame();
+      });
+
+      resetBtn.addEventListener("click", function(){
+        localStorage.removeItem(SAVE_KEY);
+        localStorage.removeItem(BEST_KEY);
+        state.currentStage = 1;
+        state.unlockedStage = 1;
+        state.totalScore = 0;
+        state.bestScore = 0;
+        saveProgress();
+        refreshSaveInfo();
+        setOverlay("Sauvegarde reinitialisee", 1.0);
+        showScreen("menu");
+      });
+
+      pauseBtn.addEventListener("click", function(){
+        if(state.phase==="playing"){
+          togglePause();
+        }else if(state.phase==="paused"){
+          togglePause();
+        }
+      });
+
+      backMenuBtn.addEventListener("click", function(){
+        state.phase="idle";
+        hideOverlay();
+        showScreen("menu");
+        refreshSaveInfo();
+      });
+
+      playAgainBtn.addEventListener("click", function(){
+        state.totalScore = 0;
+        state.currentStage = 1;
+        state.unlockedStage = 1;
+        saveProgress();
+        showScreen("game");
+        startStage(1);
+      });
+
+      victoryMenuBtn.addEventListener("click", function(){
+        showScreen("menu");
+        refreshSaveInfo();
+      });
+
+      document.addEventListener("keydown", function(e){
+        if(!gameScreen.classList.contains("active")) return;
+
+        var k = e.key.toLowerCase();
+
+        if(e.code==="Space"){
+          e.preventDefault();
+          jump();
+          return;
+        }
+        if(k==="x"){
+          e.preventDefault();
+          skill();
+          return;
+        }
+        if(k==="arrowdown" || k==="s"){
+          e.preventDefault();
+          toTunnel();
+          return;
+        }
+        if(k==="arrowup" || k==="w"){
+          e.preventDefault();
+          toTop();
+          return;
+        }
+        if(k==="p"){
+          e.preventDefault();
+          togglePause();
+        }
+      });
+
+      function bindMobile(btn, fn){
+        btn.addEventListener("click", fn);
+        btn.addEventListener("touchstart", function(ev){
+          ev.preventDefault();
+          fn();
+        }, {passive:false});
+      }
+      bindMobile(mJump, jump);
+      bindMobile(mSkill, skill);
+      bindMobile(mTunnel, toTunnel);
+      bindMobile(mTop, toTop);
+
+      // ======== INIT ========
+      function init(){
+        loadSave();
+        renderHeroCards();
+        refreshSaveInfo();
+        updateHUD();
+        showScreen("intro");
+        requestAnimationFrame(loop);
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
